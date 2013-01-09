@@ -1,0 +1,41 @@
+#!/bin/bash
+#
+#   Find observed OTUs, OTUs with only one or two individuals, and 
+#   compute CHAO-1
+#
+#   This script works on the *_otus.txt summary file returned by RDP
+#
+#   (C) Jose R Valverde, EMBnet/CNB, 2009-2012
+#   	jrvalverde@cnb.csic.es
+#
+
+
+out="rdp_otus.txt"
+
+if [ ! -d rdp ] ; then exit ; fi
+cd rdp
+
+echo "RDP" > $out
+echo "---" >> $out
+echo "read	0%	3%	5%	10%	20%" >> $out
+echo "" >> $out
+
+for i in ../*.fas ; do
+    if [ "$i" == "$out" ] ; then continue ; fi
+    n=`basename $i`
+
+    v00="-1"
+    v00=`grep "^0.0	" *cluster_results/*${n}_otus.txt |cut -d'	' -f 2`
+    if [ "$v00" == "" ] ; then v00="0"; fi
+
+    v03=`grep "^0.03	" *cluster_results/*${n}_otus.txt |cut -d'	' -f 2`
+    if [ "$v03" == "" ] ; then v03=$v00; fi
+    v05=`grep "^0.05	" *cluster_results/*${n}_otus.txt |cut -d'	' -f 2`
+    if [ "$v05" == "" ] ; then v05=$v03; fi
+    v10=`grep "^0.1	" *cluster_results/*${n}_otus.txt |cut -d'	' -f 2`
+    if [ "$v10" == "" ] ; then v10=$v05; fi
+    v20=`grep "^0.2	" *cluster_results/*${n}_otus.txt |cut -d'	' -f 2`
+    if [ "$v20" == "" ] ; then v20=$v10; fi
+    printf "%s	%d	%d	%d	%d	%d\n" \
+    	    $n	$v00	$v03	$v05	$v10	$v20 >> $out
+done

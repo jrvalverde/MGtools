@@ -1,0 +1,72 @@
+#!/bin/bash
+#
+#   Find observed OTUs, OTUs with only one or two individuals, and 
+#   compute CHAO-1
+#
+#   This script works on the output from ESPRIT. It assumes that all
+#   esprit data to process are stored in subdirectories under directory
+#   esprit, as produced by the "esprit" script.
+#
+#
+#   (C) Jose R Valverde, EMBnet/CNB, 2009-2012
+#   	jrvalverde@cnb.csic.es
+#
+
+if [ ! -d esprit ] ; then exit ; fi
+cd esprit
+
+out="esprit_otus.txt"
+
+echo "ESPRIT" > $out
+echo "------" >> $out
+echo "read	0%	3%	5%	10%	20%" >> $out
+echo "" >> $out
+
+for i in * ; do
+    if [ "$i" == "$out" ] ; then continue ; fi
+    if [ ! -e $i/$i.OTU ] ; then
+        echo "$i	NA" >> $out
+	continue
+    fi
+    v00=`grep "^ 0.00 " $i/$i.OTU |cut -d' ' -f 3`
+    if [ "$v00" == "" ] ; then v00="0"; fi
+    v03=`grep "^ 0.03 " $i/$i.OTU |cut -d' ' -f 3`
+    if [ "$v03" == "" ] ; then v03=$v00; fi
+    v05=`grep "^ 0.05 " $i/$i.OTU |cut -d' ' -f 3`
+    if [ "$v05" == "" ] ; then v05=$v03; fi
+    v10=`grep "^ 0.10 " $i/$i.OTU |cut -d' ' -f 3`
+    if [ "$v10" == "" ] ; then v10=$v05; fi
+    v20=`grep "^ 0.20 " $i/$i.OTU |cut -d' ' -f 3`
+    if [ "$v20" == "" ] ; then v20=$v10; fi
+    printf "%s	%d	%d	%d	%d	%d\n" \
+    	    $i	$v00	$v03	$v05	$v10	$v20 >> $out
+done
+
+out="esprit_chao1.txt"
+
+echo "ESPRIT" > $out
+echo "------" >> $out
+echo "read	0%	3%	5%	10%	20%" >> $out
+echo "" >> $out
+
+for i in * ; do
+    if [ "$i" == "$out" ] ; then continue ; fi
+    if [ ! -e $i/$i.CHAO1 ] ; then
+        echo "$i	NA" >> $out
+	continue
+    fi
+    v00=`cat $i/$i.CHAO1 | sed -e 's/ \+/ /g' | grep "^ 0.00" | cut -d' ' -f 3`
+    if [ "$v00" == "" ] ; then v00="0"; fi
+    v00="-1"
+    v03=`cat $i/$i.CHAO1 | sed -e 's/ \+/ /g' | grep "^ 0.03" | cut -d' ' -f 3`
+    if [ "$v03" == "" ] ; then v03=$v00; fi
+    v05=`cat $i/$i.CHAO1 | sed -e 's/ \+/ /g' | grep "^ 0.05" | cut -d' ' -f 3`
+    if [ "$v05" == "" ] ; then v05=$v03; fi
+    v10=`cat $i/$i.CHAO1 | sed -e 's/ \+/ /g' | grep "^ 0.10" | cut -d' ' -f 3`
+    if [ "$v10" == "" ] ; then v10=$v05; fi
+    v20=`cat $i/$i.CHAO1 | sed -e 's/ \+/ /g' | grep "^ 0.20" | cut -d' ' -f 3`
+    if [ "$v20" == "" ] ; then v20=$v10; fi
+    printf "%s	%f	%f	%f	%f	%f\n" \
+    	    $i	$v00	$v03	$v05	$v10	$v20 >> $out
+done
+

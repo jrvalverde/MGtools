@@ -1,0 +1,20 @@
+#!/bin/bash
+#
+#   Script used to pick sequences at random from a fasta file
+#   Usage:
+#   	pickseqs fastafile.fas	nseqs
+#
+# put all sequences in one line
+# remove empty lines
+# remove sequence names
+# randomly shuffle sequences
+# pick $2 first sequences (i.e. select $2 random sequences)
+# reinsert ">" in between sequences
+# add new unique names to all sequences
+#
+#   (C) Jose R Valverde, EMBnet/CNB, 2009-2012
+#   	jrvalverde@cnb.csic.es
+
+perl bin/fasta1.pl $1 | grep -v "^$" | grep -v "^>" | shuf | head -$2 \
+     | sed -e 's/^/>\
+/'g | bin/numbseqs.sh > `basename $1 .fas`.$2.fas
