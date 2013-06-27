@@ -2,39 +2,39 @@ PSPLIT(1)                        User Commands                       PSPLIT(1)
 
 
 
-NNAAMMEE
+NAME
        psplit - split a file into pieces
 
-SSYYNNOOPPSSIISS
-       ppsspplliitt [--bb _b_y_t_e_s[kk|mm] | --LL _r_e_g_e_x | --ll _l_i_n_e_s | --_l_i_n_e_s] [--aa _s_u_f_f_i_x_l_e_n_g_t_h]
-              [_f_i_l_e [_n_a_m_e]]
+SYNOPSIS
+       psplit [-b bytes[k|m] | -L regex | -l lines | -lines] [-a suffixlength]
+              [file [name]]
 
-DDEESSCCRRIIPPTTIIOONN
-       _P_s_p_l_i_t reads _f_i_l_e and writes it in 1000-line pieces as many  as  neces‐
+DESCRIPTION
+       Psplit reads file and writes it in 1000-line pieces as many  as  neces-
        sary, onto a set of output files.  The name of the first output file is
-       _n_a_m_e with _a_a appended, and so on lexicographically.  If no output  name
-       is given, xx is default.
+       name with aa appended, and so on lexicographically.  If no output  name
+       is given, x is default.
 
-       If  no  input  file  is  given, or if -- is given in its stead, then the
+       If  no  input  file  is  given, or if - is given in its stead, then the
        standard input file is used.
 
        The following options (all of them introduced by POSIX.2) are accepted:
 
-       --aa _s_u_f_f_i_x_l_e_n_g_t_h Use _s_u_f_f_i_x_l_e_n_g_t_h characters for the  appended  part  of
+       -a suffixlength Use suffixlength characters for the  appended  part  of
                        the output file name different for each file instead of
-                       2 (using a _s_u_f_f_i_x_l_e_n_g_t_h of 3 will  create  files  named
-                       xx_a_a_a–xx_z_z_z, and so forth).
+                       2 (using a suffixlength of 3 will  create  files  named
+                       xaaa-xzzz, and so forth).
 
-       --bb _n[kk|mm]       Split  the file in pieces of _n bytes each.  If kk is ap‐
-                       pended, _n is taken in kilobyte (1024-byte) units;  with
-                       mm, in megabyte units.
+       -b n[k|m]       Split  the file in pieces of n bytes each.  If k is ap-
+                       pended, n is taken in kilobyte (1024-byte) units;  with
+                       m, in megabyte units.
 
-       --ll _n            Split the file in pieces of _n lines each.
+       -l n            Split the file in pieces of n lines each.
 
-       --LL _r_e_g_e_x        Only  count lines containing the stated regular expres‐
+       -L regex        Only  count lines containing the stated regular expres-
                        sion (non-POSIX).
 
-SSEEEE AALLSSOO
+SEE ALSO
        csplit(1) split(1)
 
 
