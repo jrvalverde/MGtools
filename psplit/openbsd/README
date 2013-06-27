@@ -1,15 +1,15 @@
-SPLIT(1)                  BSD General Commands Manual                 SPLIT(1)
+PSPLIT(1)                 BSD General Commands Manual                PSPLIT(1)
 
 NAME
-     split -- split a file into pieces
+     psplit -- split a file into pieces allowing for regex pattern matching
 
 SYNOPSIS
-     split [-a suffix_length]
-           [-b byte_count[k|m] | -l line_count | -L line_pattern | -p pattern]
-           [file [name]]
+     psplit [-a suffix_length]
+            [-b byte_count[k|m] | -l line_count | -L line_pattern | -p
+            pattern] [file [name]]
 
 DESCRIPTION
-     The split utility reads the given file, or standard input if no file is
+     The psplit utility reads the given file, or standard input if no file is
      specified, and breaks it up into files of 1000 lines each.  file itself
      is not altered.
 
@@ -52,7 +52,7 @@ SEE ALSO
      split(1), csplit(1), re_format(7)
 
 STANDARDS
-     The split utility is compliant with the IEEE Std 1003.1-2008
+     The psplit utility is compliant with the IEEE Std 1003.1-2008
      (``POSIX.1'') specification.
 
      The flag [-p] is an extension to that specification.  The flag [-L] is an
@@ -62,7 +62,9 @@ STANDARDS
      absence of a name parameter is an OpenBSD extension.
 
 HISTORY
-     A split command appeared in Version 3 AT&T UNIX.
+     The psplit command was developed by Jose R. Valverde (CNB/CSIC) based on
+     the split version from OpenBSD and NetBSD which comes all the way down
+     from Version 3 AT&T UNIX.
 
 BUGS
      The maximum line length for matching patterns is 65536.
