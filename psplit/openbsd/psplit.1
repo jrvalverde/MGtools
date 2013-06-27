@@ -1,5 +1,5 @@
-.\"	$OpenBSD: split.1,v 1.20 2010/09/03 11:09:29 jmc Exp $
-.\"	$NetBSD: split.1,v 1.5 1994/12/21 08:20:35 jtc Exp $
+.\"	$OpenBSD: psplit.1,v 1.20.1 2013 jr $
+.\"	$NetBSD: psplit.1,v 1.5.2 2013 jr $
 .\"
 .\" Copyright (c) 1990, 1991, 1993, 1994
 .\"	The Regents of the University of California.  All rights reserved.
@@ -28,16 +28,16 @@
 .\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 .\" SUCH DAMAGE.
 .\"
-.\"	@(#)split.1	8.3 (Berkeley) 4/16/94
+.\"	@(#)psplit.1	8.3 (Berkeley) 27/6/2013
 .\"
-.Dd $Mdocdate: September 3 2010 $
-.Dt SPLIT 1
+.Dd $Mdocdate: June 27 2013 $
+.Dt PSPLIT 1
 .Os
 .Sh NAME
-.Nm split
-.Nd split a file into pieces
+.Nm psplit
+.Nd split a file into pieces allowing for regex pattern matching
 .Sh SYNOPSIS
-.Nm split
+.Nm psplit
 .Op Fl a Ar suffix_length
 .br
 .Oo
@@ -157,9 +157,10 @@ parameter is an
 .Ox
 extension.
 .Sh HISTORY
-A
+The
 .Nm
-command appeared in
+command was developed by Jose R. Valverde (CNB/CSIC) based on the split version from
+OpenBSD and NetBSD which comes all the way down from
 .At v3 .
 .Sh BUGS
 The maximum line length for matching patterns is 65536.

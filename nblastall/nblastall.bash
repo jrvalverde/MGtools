@@ -1,6 +1,19 @@
 #!/bin/bash
 #
-#   run blastall splitting the input file and processing it in parallel
+#   Run blastall in parallel
+#
+#   runs blastall splitting the input file and processing it in parallel
+# 
+#   This script will process the command line and extract the target
+# file name, then split this file in chunks in a subdirectory, run 
+# blastall against each chunk in parallel using up to a maximum of 
+# half the available number of processors, and return the concatenated 
+# output of each blast sub-job
+#
+#   In order to return the output properly, and since we will run jobs
+# in parallel, we need to avoid interspersed parallel job output, that
+# means that each sub-job needs to save its output to a file so that
+# once completed all files can be returned.
 #
 #   Right now it will use up to a maximum of half the available CPUs
 #   (see $n)

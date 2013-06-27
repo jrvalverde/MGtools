@@ -1,0 +1,14 @@
+DISTDNA
+-------
+
+Compute DNA distances efficiently. This implementation uses on the fly
+calculations to speed up and reduce memory requirements of DNA distance
+calculations. It provides support for a large number of distances, and
+help on when and how to use each of them. Try 
+
+distdna -h
+
+distdna -?
+
+For more information.
+

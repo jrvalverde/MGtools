@@ -1,0 +1,144 @@
+FASTQ-EXTRACT(1)                 User Manuals                 FASTQ-EXTRACT(1)
+
+
+
+NAME
+       fastq-extract - Extract from a fastq file reads that match a given pat‐
+       tern
+
+
+SYNOPSIS
+       fastq-extract  [-p|--pattern   pattern   ]   [-d|--delete]   [-a|--all]
+       [-h|--help] < IN.fastq > OUT.fastq
+
+
+DESCRIPTION
+       fastq-extract  identifies  all  reads  from  a fastq file that match an
+       extended regular expression pattern within their sequence  and  option‐
+       ally  removes  the  sequence  and corresponding quality codes up to and
+       including the pattern before printing said matching  read  to  standard
+       output.
+
+       fastq-extract is intended to be used as a UNIX filter, reading from its
+       standard input and writing to its standard output
+
+       pattern is an extended regular expression, which makes it easy to spec‐
+       ify combinations of barcodes and primers
+
+       The  intended use is to identify barcode/primer combinations and select
+       only those reads containing adequate combinations to extract the actual
+       sequence (without barcode/primer).
+
+       Using regex(7) for this purpose is very easy: each group of items to be
+       matched is enclosed in parentheses ( ) , and  groups  can  be  combined
+       with | (or), or just concatenated.
+
+       Pattern example: if you want to identify reads which have been labelled
+       with barcodes ATG or GCA , to amplify a sequence with primer ATGCATGC ,
+       the process would be:
+
+       1.     barcode  ATG  is composed by A, T and G. So we concatenate them:
+              ATG
+
+       2.     barcode GCA is composed by the series G, C and A. So we concate‐
+              nate them: GCA
+
+       3.     To  check for any of those two barcodes, we need to combine them
+              with | (or): to avoid ambiguities, we first group  each  barcode
+              with   parentheses:   (ATG)  ,  (GCA)  and  then  combine  them:
+              (ATG)|(GCA) means match either barcode ATG or barcode GCA. If we
+              didn't use the parenthesis, we would have ATG|GCA , which can be
+              interpreted as match AT[G or C]CA, and  which  is  not  what  we
+              want.
+
+       4.     To require that any of these barcodes be followed immediately by
+              the primer ATGCATGC, we simply concatenate them.  Again,  it  is
+              better  if we group each tag: first the two alternative barcodes
+              are grouped using parentheses: ((ATG)|(GCA)) , then  we  enclose
+              in  parentheses the primer (ATGCATGC) and finally we concatenate
+              them: ((ATG)|(GCA))(ATGCATGC)
+
+       5.     We could anchor the pattern  to  be  at  the  beginning  of  the
+              sequence by prepending it with " ^ " (meaning begininng of line)
+              as ^((ATG)|(GCA))(ATGCATGC)
+
+       6.     Illumina reads tend to have for some reason a high error rate in
+              the first position, which is sometimes removed. We could add a "
+              ?  " after the first residue of each barcode (meaning  match  it
+              zero  or  one times), or use .?  instead (meaning zero or one of
+              any residue) to allow for full ambiguity in the  first  position
+              which might also be absent.
+
+
+OPTIONS
+       -h , --help
+              display a short help text
+
+       -p , --pattern pattern
+              pattern to match as an extended regular expression (see regex(7)
+              )
+
+       -d , --delete
+              Delete from the beginning of the sequence up  to  and  including
+              the matching pattern (if any) and corresponding quality scores
+
+       -a , --all
+              Output  all reads irrespective of whether they match the pattern
+              or not (default is to only output matching reads). This is  use‐
+              ful  in  combination with -d to remove the pattern from matching
+              reads while keeping all the other reads intact. Using  -a  alone
+              has no effect and results in output being the same as input.
+
+FILES
+       fastq-extract gets reads to be checked from standard input and produces
+       matching reads without any sequence up to  and  including  the  matched
+       pattern in its standard output.
+
+       fastq-extract is intended to be used as a UNIX filter.
+
+
+       Example sh-derivative shell usage:
+              fastq-extract  '^((ATG)|(GCA))(ATGCATGC)' < IN.fastq > OUT.fastq
+              2> log
+
+       Example sh-shell derivative usage (filter):
+              cat  IN.fastq  |  fastq-extract   '^((ATG)|(GCA))(ATGCATGC)'   >
+              OUT.fastq 2> log
+
+
+DIAGNOSTICS
+       The  program  will  output  warnings to its standard error stream if it
+       cannot sync to a given read (the input contains  entries  that  do  not
+       conform  to  the  FASTQ "standard"), and will try to recover by looking
+       ahead for the next read.
+
+
+EXIT STATUS
+       The exist status is 0 unless no pattern is  specified  in  the  command
+       line, when it returns 1
+
+
+BUGS
+       None known. Please, report any bugs to <jrvalverde@cnb.csic.es>
+
+
+AUTHOR
+       Jose R. Valverde, EMBnet/CNB, CSIC. Madrid, Spain.
+
+
+COPYRIGHT
+       Copyright   ©   Jose   R  Valverde,  2012.  Licensed  under  EUPL:  see
+       http://www.osor.eu/eupl for details.
+
+       This is free software: you are free to change and redistribute it.
+
+       There is NO WARRANTY whatsoever, express or implied, to the extent per‐
+       mitted by applicable law.
+
+SEE ALSO
+       regex(7)
+
+
+
+
+UNIX                              AUGUST 2012                 FASTQ-EXTRACT(1)
