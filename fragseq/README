@@ -1,0 +1,6 @@
+Split a long sequence into smaller fragments. We may do it at random and
+specify the coverage for the fragments. This is useful to simulate a
+random shotgun of a pool of clonal sequences.
+
+The fragments generated may later be mutated with EMBOSS msbar to the
+desired level to simulate sequencing errors.
