@@ -42,8 +42,19 @@ cmd="$blastall $*"
 #   We can make this as complex as needed, e.g. using LoadAvg or whatever
 #   Use half the processors available
 # n=`nproc --all`
-n=`grep -c processor /proc/cpuinfo`
-if [ $n -ne 1 ] ; then let n=$n/2 ; fi
+ncpus=`grep -c processor /proc/cpuinfo`
+# if more than one processor is available, use half of the available CPUs
+if [ $n -ne 1 ] ; then let n=$ncpus/2 ; fi
+# Check if there is an environment variable that coerces a given number of CPUs
+#     USE_N_CPUS is an envvar with the number of CPUs to use, rename accordingly
+#     if it is set and is a number and is not larger than ncpus, use it
+#         if it is larger, use $ncpus
+#     if it is not set, use $ncpus/2
+ if [[ "$USE_N_CPUS" =~ ^[0-9]+$ ]] ; then
+    if [ $USE_NCPUS -lt $ncpus ]; then
+        n=${USE_N_CPUS:ncpus}
+    fi
+fi
 #echo "$n CPUs will be used"
 
 
@@ -60,16 +71,6 @@ while (( $# )) ; do
     shift
 done
 
-# This is not correct: when no -i is used, blastall reads from stdin
-#
-#if [ "$in" == "" ] ; then 
-#    echo "###ERR: NO INPUT FILE"
-#    exit
-#else
-#    infile="$in"
-#fi
-# 
-# a better approach would be to use the following
 #   first check special case (print help and nothing else)
 if [ "$args" == "-" ] ; then $blastall - ; exit ; fi
 #   otherwise, we're expected to read from stdin
@@ -122,7 +123,9 @@ for i in * ; do
     $minicmd -i $i >& $i.blast &
 done
 wait
-cat *.blast
+
+#cat *.blast
+ls *.blast | sort | while read i ; do cat $i | grep -v WARNING ; done
 cd ..
 
 # should be uncommented in production
@@ -130,4 +133,6 @@ cd ..
 #rm -rf $chunks
 # if we were supposed to read from stdin but made a copy instead...
 if [ "$in" == "" ] ; then rm -rf $infile ; fi
- 
+# 
+exit 0
+
