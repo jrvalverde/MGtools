@@ -1,0 +1,8 @@
+The program here simply changes the number of reads available in
+an SFF file, and disables the indexes of the file by setting the
+index fields in the header to zeroes. It does not remove the 
+index itself nor any index-related headers.
+
+To remove the index, the easiest way would be to use 'truncate(1)'
+on the command line, using the offset reported by the program.
+
