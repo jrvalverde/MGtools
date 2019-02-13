@@ -1,0 +1,244 @@
+head	1.2;
+access;
+symbols;
+locks; strict;
+comment	@# @;
+
+
+1.2
+date	2012.08.01.15.03.27;	author jr;	state Exp;
+branches;
+next	1.1;
+
+1.1
+date	2012.08.01.12.28.21;	author jr;	state Exp;
+branches;
+next	;
+
+
+desc
+@Man page for the fastq-extract program [jr]
+@
+
+
+1.2
+log
+@Added command line options [j]
+@
+text
+@.\" Process this file with
+.\" groff -man -Tascii fastq-extract.1
+.\"
+.\" $Id: main.1,v 1.1 2012/08/01 12:28:21 jr Exp jr $
+.\"
+.\" $Log: main.1,v $
+.\" Revision 1.1  2012/08/01 12:28:21  jr
+.\" Initial revision
+.\"
+.\"
+.TH FASTQ-EXTRACT 1 "AUGUST 2012" UNIX "User Manuals"
+.SH NAME
+fastq-extract \- Extract from a fastq file reads that match a given pattern
+
+.SH SYNOPSIS
+.B fastq-extract 
+[\-p|\-\-pattern 
+.I pattern
+] [\-d|\-\-delete] [\-a|\-\-all] [\-h|\-\-help]
+.B <
+.I IN.fastq
+.B >
+.I OUT.fastq
+
+.SH DESCRIPTION
+.B fastq-extract
+identifies all reads from a fastq file that match an extended 
+regular expression pattern within their sequence and optionally removes
+the sequence and corresponding quality codes up to and including
+the pattern before printing said matching read to standard output.
+
+.B fastq-extract
+is intended to be used as a UNIX filter, reading from its
+.IR "standard input"
+and writing to its
+.IR "standard output"
+.
+
+.I pattern
+is an extended regular expression, which makes it easy
+to specify combinations of barcodes and primers
+
+The intended use is to identify barcode/primer combinations and
+select only those reads containing adequate combinations to
+extract the actual sequence (without barcode/primer).
+
+Using 
+.BR regex (7)
+for this purpose is very easy: each group of
+items to be matched is enclosed in parentheses 
+.B "( )"
+, and groups can be combined with 
+.B | 
+(or), or just concatenated.
+
+.B Pattern example: 
+if you want to identify reads which have been
+labelled with barcodes 
+.R ATG 
+or 
+.R GCA
+, to amplify a sequence with primer 
+.R ATGCATGC
+, the process would be:
+.IP 1.
+barcode ATG is composed by A, T and G. So we concatenate them: 
+.B ATG
+.IP 2. 
+barcode GCA is composed by the series G, C and A. So we concatenate them: 
+.B GCA
+.IP 3. 
+To check for any of those two barcodes, we need to combine 
+them with
+.B | 
+(or): to avoid ambiguities, we first group each barcode with parentheses: 
+.B (ATG)
+, 
+.B (GCA) 
+and then combine them: 
+.B (ATG)|(GCA) 
+means match either barcode ATG or barcode GCA. If we didn't use the 
+parenthesis, we would have 
+.R ATG|GCA
+, which can be interpreted as match
+AT[G or C]CA, and which is not what we want.
+.IP 4. 
+To require that any of these barcodes be followed immediately
+by the primer ATGCATGC, we simply concatenate them. Again,
+it is better if we group each tag: first the two alternative
+barcodes are grouped using parentheses: 
+.B ((ATG)|(GCA))
+, then we enclose in parentheses the primer 
+.B (ATGCATGC) 
+and finally we concatenate them: 
+.B ((ATG)|(GCA))(ATGCATGC)
+.IP 5. 
+We could anchor the pattern to be at the beginning of the
+sequence by prepending it with "
+.B ^
+" (meaning begininng of line) as 
+.B ^((ATG)|(GCA))(ATGCATGC)
+.IP 6. 
+Illumina reads tend to have for some reason a high error rate in the
+first position, which is sometimes removed. We could add a "
+.B "?"
+" after the first residue of each barcode (meaning match it zero or 
+one times), or use 
+.B ".?" 
+instead (meaning zero or one of any residue) to allow for full ambiguity 
+in the first position which might also be absent.
+
+.SH OPTIONS
+.TP
+.B \-h , \-\-help
+display a short help text
+.TP
+.BI "\-p , \-\-pattern " pattern
+pattern to match as an extended regular expression (see
+.BR regex (7)
+)
+.TP
+.B \-d , \-\-delete
+Delete from the beginning of the sequence up to and including the
+matching pattern (if any) and corresponding quality scores
+.TP
+.B \-a , \-\-all
+Output all reads irrespective of whether they match the pattern
+or not (default is to only output matching reads). This is useful
+in combination with
+.B \-d
+to remove the pattern from matching reads while keeping all the 
+other reads intact. Using
+.B \-a
+alone has no effect and results in output being the same as input.
+.SH FILES
+.B fastq-extract
+gets reads to be checked from standard input and produces matching
+reads without any sequence up to and including the matched pattern
+in its standard output.
+
+.B fastq-extract
+is intended to be used as a UNIX filter.
+
+.IP "Example sh-derivative shell usage:"
+.B fastq-extract 
+.I '^((ATG)|(GCA))(ATGCATGC)'
+.B <
+.I IN.fastq
+.B >
+.I OUT.fastq
+.B 2>
+.I log
+.IP "Example sh-shell derivative usage (filter):"
+.B cat 
+.I IN.fastq
+.B "| fastq-extract "
+.I '^((ATG)|(GCA))(ATGCATGC)'
+.B >
+.I OUT.fastq
+.B 2>
+.I log
+
+.SH DIAGNOSTICS
+The program will output warnings to its standard error stream if it cannot
+sync to a given read (the input contains entries that do not conform to the
+FASTQ "standard"), and will try to recover by looking ahead for the next
+read.
+
+.SH "EXIT STATUS"
+The exist status is
+.B 0
+unless no pattern is specified in the command line, when it returns
+.B 1
+
+.SH BUGS
+None known. Please, report any bugs to
+.R <jrvalverde@@cnb.csic.es>
+
+.SH AUTHOR
+Jose R. Valverde, EMBnet/CNB, CSIC. Madrid, Spain.
+
+.SH COPYRIGHT
+Copyright \(co Jose R Valverde, 2012. Licensed under EUPL: see
+http://www.osor.eu/eupl for details.
+
+This is free software: you are free to change and redistribute it.
+
+There is 
+.B NO WARRANTY
+whatsoever, express or implied, to the extent permitted by applicable law.
+.SH SEE ALSO
+.BR regex (7)
+
+@
+
+
+1.1
+log
+@Initial revision
+@
+text
+@d4 5
+a8 1
+.\" $Id$
+a9 1
+.\" $Log$
+d17 1
+d19 1
+d28 1
+a28 1
+regular expression pattern within their sequence and removes
+d113 22
+a134 1
+None yet
+d191 3
+@

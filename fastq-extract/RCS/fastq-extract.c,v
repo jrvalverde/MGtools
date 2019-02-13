@@ -1,0 +1,593 @@
+head	1.9;
+access;
+symbols;
+locks; strict;
+comment	@ * @;
+
+
+1.9
+date	2012.08.01.15.05.11;	author jr;	state Exp;
+branches;
+next	1.8;
+
+1.8
+date	2012.08.01.15.03.16;	author jr;	state Exp;
+branches;
+next	1.7;
+
+1.7
+date	2012.08.01.13.18.36;	author jr;	state Exp;
+branches;
+next	1.6;
+
+1.6
+date	2012.08.01.12.47.37;	author jr;	state Exp;
+branches;
+next	1.5;
+
+1.5
+date	2012.08.01.12.27.26;	author jr;	state Exp;
+branches;
+next	1.4;
+
+1.4
+date	2012.08.01.11.18.09;	author jr;	state Exp;
+branches;
+next	1.3;
+
+1.3
+date	2012.08.01.11.10.55;	author jr;	state Exp;
+branches;
+next	1.2;
+
+1.2
+date	2012.08.01.11.10.11;	author jr;	state Exp;
+branches;
+next	1.1;
+
+1.1
+date	2012.08.01.09.58.37;	author jr;	state Exp;
+branches;
+next	;
+
+
+desc
+@Extract reads from a fastq file matching a given regular expression [jr]
+@
+
+
+1.9
+log
+@Fixed typo [jr]
+@
+text
+@/*
+ *  fastq-extract
+ *
+ *  	Identify all reads from a fastq file that match an extended 
+ *  	regular expression pattern within their sequence and remove
+ *  	the sequence and corresponding quality codes up to and including
+ *  	the pattern before printing said matching read to standard output.
+ *
+ *  	Usage:	fastq-extract -p pattern -a -d < IN.fastq > OUT.fastq
+ *
+ *  	pattern is an extended regular expression, which makes it easy
+ *  	to specify combinations of barcodes and primers
+ *
+ *  	Intended use is to identify barcode/primer combinations and
+ *  	select only those reads containing adequate combinations to
+ *  	extract the actual sequence (without barcode/primer).
+ *
+ *  	Using regexp for this purpose is very easy: each group of
+ *  	items to be matched is enclosed in parentheses (), and
+ *  	groups can be combined with | (or), or just concatenated.
+ *
+ *  	For instance: if you want to identify reads which have been
+ *  	labelled with barcodes ATG or GCA, to amplify a sequence with
+ *  	primer ATGCATGC, the process would be:
+ *  	    1. barcode ATG is composed by A, T and G. So we concatenate
+ *  	    	them: ATG
+ *
+ *  	    2. barcode GCA is composed by the series G, C and A. So we
+ *  	    	concatenate them: GCA
+ *
+ *  	    3. To check for any of those two barcodes, we need to combine 
+ *  	    	them with | (or): to avoid ambiguities, we first group
+ *  	    	each barcode with parentheses: (ATG), (GCA) and then
+ *  	    	combine them: (ATG)|(GCA) means match either barcode ATG
+ *  	    	or barcode GCA. If we didn't use the parenthesis, we
+ *  	    	would have ATG|GCA, which can be interpreted as match
+ *  	    	AT[G or C]CA, and which is not what we want.
+ *
+ *  	    4. To require that any of these barcodes be followed immediately
+ *  	    	by the primer ATGCATGC, we simply concatenate them. Again,
+ *  	    	it is better if we group each tag: first the two alternative
+ *  	    	are grouped using parentheses: ((ATG)|(GCA)), then we enclose
+ *  	    	in parentheses the primer (ATGCATGC) and finally we 
+ *  	    	concatenate them: ((ATG)|(GCA))(ATGCATGC)
+ *
+ *  	    5. We could anchor the pattern to be at the beginning of the
+ *  	    	sequence by prepending it with "^" (meaning begininng of line)
+ *  	    	as ^((ATG)|(GCA))(ATGCATGC)
+ *
+ *  	    6. Illumina reads have for some reason a high error rate in the
+ *  	    	first position, which is sometimes removed. We could add a
+ *  	    	"?" after the first residue of each barcode (meaning match
+ *  	    	it zero or one times), or use .? instead (meaning zero or
+ *  	    	one of any residue to allow for full ambiguity in the first
+ *  	    	position which might also be absent).
+ *
+ *  (C) Jose R Valverde, EMBnet/CNB, CSIC, 2012
+ *
+ *  Released under EUPL (http://www.osor.eu/eupl).
+ *
+ * Licensed under the EUPL, Version 1.1 or - as soon they
+ * will be approved by the European Commission - subsequent
+ * versions of the EUPL (the "Licence").
+ *
+ * You may not use this work except in compliance with the
+ * Licence.
+ *
+ * You may obtain a copy of the Licence at:
+ *
+ *  	    http://ec.europa.eu/idabc/eupl5
+ *
+ * Unless required by applicable law or agreed to in
+ * writing, software distributed under the Licence is
+ * distributed on an "AS IS" basis,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied.
+ *
+ * See the Licence for the specific language governing
+ * permissions and limitations under the Licence.
+ *
+ *  $Id: fastq-extract.c,v 1.8 2012/08/01 15:03:16 jr Exp jr $
+ *
+ *  $Log: fastq-extract.c,v $
+ *  Revision 1.8  2012/08/01 15:03:16  jr
+ *  Added command line options [j]
+ *
+ *  Revision 1.7  2012/08/01 13:18:36  jr
+ *  Use extended regular expressions [jr]
+ *
+ *  Revision 1.6  2012/08/01 12:47:37  jr
+ *  Changed to only output matching reads [jr]
+ *
+ *  Revision 1.5  2012/08/01 12:27:26  jr
+ *  Expanded info on EUPL license [jr]
+ *
+ *  Revision 1.4  2012/08/01 11:18:09  jr
+ *  Corrected to accept SRA fastq with description repeated in '+' line [jr]
+ *
+ *  Revision 1.3  2012/08/01 11:10:55  jr
+ *  Added tags. [jr]
+ *
+ *  Revision 1.2  2012/08/01 11:10:11  jr
+ *  Initial version [jr]
+ *
+ *  Revision 1.1  2012/08/01 09:58:37  jr
+ *  Initial revision
+
+ *
+ */
+
+#include <sys/types.h>
+#include <regex.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define GNU_SOURCE
+#include <getopt.h>
+
+
+#define MAXLINE	8192
+/* I know, it's ugly, and I should use dynamic memory allocation. */
+/* And I will eventually do... */
+
+typedef struct {
+    char id[MAXLINE];		/* ID line */
+    char sq[MAXLINE];		/* Sequence */
+    char pl[MAXLINE];		/* + */
+    char qc[MAXLINE];		/* Quality */
+} read_t;
+
+/*
+ *	getread
+ *		get a read from the specified input file
+ *	return
+ *		read
+ *		-1	EOF
+ *		 0	LOST SYNC (no read read)
+ *		 1	OK (1 read read)
+ */
+int getread(FILE * file, read_t * read)
+{
+    char *line;
+
+    /* seek to first line starting with an '@@' */
+    do {
+	line = fgets(read->id, MAXLINE, file);
+	if (line == NULL)
+	    return -1;
+    } while (line[0] != '@@');
+
+    /*
+     * That line might come from a quality line, so we need
+     * to ensure we use the last line with an '@@' and that
+     * the next after is used for the sequence
+     */
+    do {
+	line = fgets(read->sq, MAXLINE, file);
+	if (line == NULL)
+	    return -1;
+	if (line[0] == '@@')
+	    strncpy(read->id, line, MAXLINE);
+    } while (line[0] == '@@');
+    /* if (!isseq(line)) return 0; */
+
+    /* Now get the '+' line */
+    line = fgets(read->pl, MAXLINE, file);
+    if (line == NULL)
+	return -1;
+    /* SRA includes the description again in the + line!
+    if ((line[0] != '+') && (line[1] != '\n')) */
+    if (line[0] != '+')
+	return 0;
+
+    /* finally get the quality line */
+    line = fgets(read->qc, MAXLINE, file);
+    if (line == NULL)
+	return -1;
+    return 1;
+}
+
+void usage(char *name)
+{
+    fprintf(stderr, "\n\tUsage: %s -p pattern -a -d < IN.fastq > OUT.fastq\n\n",
+	    name);
+    fprintf(stderr,
+	    "\tPattern example: \"^((ATG)|(GCT))(ATGCATGCATGCATGC)\"\n\
+	    Would pick sequences beginning ^ with barcodes (ATG) or (GCT)\n\
+	    followed by primer (ATGCATGCATGCATGC)\n\n");
+    fprintf(stderr, "See man page for more details\n\n");
+}
+
+int main(int argc, char **argv)
+{
+    regex_t preg;
+    char *string = "";
+    char *pattern = "";
+    int rc;
+    size_t nmatch = 2;
+    regmatch_t pmatch[2];
+    read_t read;
+    int i, pos, delete, all;
+
+    static struct option opts[] = {
+    	{"pattern", 1, NULL, 'p'},
+	{"delete", 0, NULL, 'd'},
+	{"all", 0, NULL, 'a'},
+	{"help", 0, NULL, 'h'},
+	{NULL, 0, NULL, 0}
+    };
+    delete = all = i = 0;
+    do {
+    	i = getopt_long(argc, argv, "p:dah", opts, NULL);
+	switch (i) {
+	case 'p':
+	    pattern = optarg;
+	    break;
+	case 'd':
+	    delete = 1;
+	    break;
+	case 'a':
+	    all = 1;
+	    break;
+	case 'h':
+	    usage(argv[0]);
+	    break;
+	case '?':
+	    usage(argv[0]);
+	    return -1;
+	    break;
+	default:
+	    break;
+	}
+    } while (i != -1);
+
+    if (pattern == NULL) { 
+    	usage(argv[0]); 
+	return -1; 
+    }
+    fprintf(stderr, "%s -p %s -d %d -a %d\n", argv[0], pattern, delete, all); 
+
+    /* Compile pattern */
+    /* use extended regular expressions and ignore case */
+    /* case should always be upper, but just 'in case'... :-) */
+    if (0 != (rc = regcomp(&preg, pattern, REG_EXTENDED|REG_ICASE))) {
+	printf("regcomp() failed, returning nonzero (%d)\n", rc);
+	exit(EXIT_FAILURE);
+    }
+
+    /* process standard input */
+    do {
+    	i = getread(stdin, &read);
+	if (i == 0) {
+	    fprintf(stderr, "LOST SYNC: check input for validity\n");
+	    continue;
+	}
+	if (i == 1) {
+    	    string = read.sq;
+	    /* we got one read, test it for presence of the pattern in the sequence */
+	    if ((rc = regexec(&preg, string, nmatch, pmatch, 0)) == 0) {
+	    	/* this read matches the pattern */
+		if (delete == 1) 
+		    pos = pmatch[0].rm_eo;
+		else
+		    pos = 0;
+	    	fprintf(stdout, "%s%s%s%s", read.id, &read.sq[pos], read.pl, &read.qc[pos]);
+	    } else {
+	    	pos = 0;
+    	    	if (all == 1)
+		    fprintf(stdout, "%s%s%s%s", read.id, &read.sq[pos], read.pl, &read.qc[pos]);
+    	    }
+	}
+    } while (i != -1);	    /* until EOF */
+
+    regfree(&preg);
+    return 0;
+
+}
+@
+
+
+1.8
+log
+@Added command line options [j]
+@
+text
+@d81 1
+a81 1
+ *  $Id: fastq-extract.c,v 1.7 2012/08/01 13:18:36 jr Exp jr $
+d84 3
+d240 1
+a240 1
+    fprintf(stderr "%s -p %s -d %d -a %d\n", argv[0], pattern, delete, all); 
+@
+
+
+1.7
+log
+@Use extended regular expressions [jr]
+@
+text
+@d9 1
+a9 1
+ *  	Usage:	fastq-extract pattern < IN.fastq > OUT.fastq
+d81 1
+a81 1
+ *  $Id: fastq-extract.c,v 1.6 2012/08/01 12:47:37 jr Exp jr $
+d84 3
+d114 4
+d119 2
+d179 10
+d193 2
+a194 2
+    char *string = "a very simple simple simple string";
+    char *pattern = "\\(sim[a-z]le\\) \\1";
+d199 33
+a231 1
+    int i, pos;
+d233 3
+a235 9
+    /* check arguments */
+    if (argc != 2) {
+	fprintf(stderr, "\n\tUsage: %s pattern < IN.fastq > OUT.fastq\n\n",
+		argv[0]);
+	fprintf(stderr,
+		"\tPattern example: \"^((ATG)|(GCT))(ATGCATGCATGCATGC)\"\n\
+		Would pick sequences beginning ^ with barcodes (ATG) or (GCT)\n\
+		followed by primer (ATGCATGCATGCATGC)\n\n");
+	return 1;
+d237 2
+d240 2
+a241 1
+    pattern = argv[1];
+d259 4
+a262 1
+	    	pos = pmatch[0].rm_eo;
+d266 2
+a267 3
+	        /* do not print if it does not match
+		fprintf(stdout, "%s%s%s%s", read.id, &read.sq[pos], read.pl, &read.qc[pos]);
+    	    	*/
+a273 29
+
+/*
+    if (0 != (rc = regexec(&preg, string, nmatch, pmatch, 0))) {
+	printf("Failed to match '%s' with '%s',returning %d.\n",
+	       string, pattern, rc);
+    } else {
+	printf("With the whole expression, "
+	       "a matched substring \"%.*s\" is found at position %d to %d.\n",
+	       pmatch[0].rm_eo - pmatch[0].rm_so, &string[pmatch[0].rm_so],
+	       pmatch[0].rm_so, pmatch[0].rm_eo - 1);
+	printf("With the sub-expression, "
+	       "a matched substring \"%.*s\" is found at position %d to %d.\n",
+	       pmatch[1].rm_eo - pmatch[1].rm_so, &string[pmatch[1].rm_so],
+	       pmatch[1].rm_so, pmatch[1].rm_eo - 1);
+    }
+    regfree(&preg);
+    return 0;
+
+   / 
+   ****************************************************************************
+      The output should be similar to :
+
+      With the whole expression, a matched substring "simple simple" is found
+      at position 7 to 19.
+      With the sub-expression, a matched substring "simple" is found
+      at position 7 to 12.
+   ****************************************************************************
+   /
+*/
+@
+
+
+1.6
+log
+@Changed to only output matching reads [jr]
+@
+text
+@d81 5
+a85 1
+ *  $Id: main.c,v 1.5 2012/08/01 12:27:26 jr Exp jr $
+a86 1
+ *  $Log: main.c,v $
+d194 1
+a194 1
+    if (0 != (rc = regcomp(&preg, pattern, 0))) {
+@
+
+
+1.5
+log
+@Expanded info on EUPL license [jr]
+@
+text
+@d81 1
+a81 1
+ *  $Id: main.c,v 1.4 2012/08/01 11:18:09 jr Exp jr $
+d84 3
+d206 2
+a207 1
+	    if ((rc = regexec(&preg, string, nmatch, pmatch, 0)) == 0)
+d209 2
+a210 1
+	    else
+d212 4
+a215 2
+	    /* print out read */
+	    fprintf(stdout, "%s%s%s%s", read.id, &read.sq[pos], read.pl, &read.qc[pos]);
+d217 1
+a217 1
+    } while (i != -1);
+@
+
+
+1.4
+log
+@Corrected to accept SRA fastq with description repeated in '+' line [jr]
+@
+text
+@d14 1
+a14 1
+ *  	Intended use us to identify barcode/primer combinations and
+d61 21
+a81 1
+ *  $Id: main.c,v 1.3 2012/08/01 11:10:55 jr Exp jr $
+d84 3
+d89 1
+d92 1
+@
+
+
+1.3
+log
+@Added tags. [jr]
+@
+text
+@d61 11
+a71 2
+ *  $Id$
+ *  $Log$
+d127 3
+a129 1
+    if ((line[0] != '+') && (line[1] != '\n'))
+@
+
+
+1.2
+log
+@Initial version [jr]
+@
+text
+@d60 3
+@
+
+
+1.1
+log
+@Initial revision
+@
+text
+@d1 62
+d65 11
+d78 7
+a84 4
+ * Match string against the extended regular expression in
+ * pattern, treating errors as no match.
+ *
+ * Return 1 for match, 0 for no match.
+d86 38
+d126 1
+a126 2
+int
+match(const char *string, char *pattern)
+d128 18
+a145 6
+    int    status;
+    regex_t    re;
+
+
+    if (regcomp(&re, pattern, REG_EXTENDED|REG_NOSUB) != 0) {
+        return(0);      /* Report error. */
+d147 5
+a151 4
+    status = regexec(&re, string, (size_t) 0, NULL, 0);
+    regfree(&re);
+    if (status != 0) {
+        return(0);      /* Report error. */
+a152 2
+    return(1);
+}
+d154 21
+d177 12
+a188 22
+ *  For now we'll keep it simple:
+ *  	work in filter mode
+ *  	Take an extended regexp as aregument representing the valid
+ *  	combination(s) of barcode+primer
+ *  	Filter out reads matching the regexp after removing it from
+ *  	the sequence and from the quality score line
+ */
+
+int main(const int argc, const char *argv[])
+{
+    char line[8192];
+    char *pattern;
+    int    status;
+    regex_t    re;
+    size_t nmatch = 1;
+    regmatch_t pmatch[1];
+
+    if (argc != 2) return(0);
+    
+    pattern = argv[1];
+    if (regcomp(&re, pattern, REG_EXTENDED|REG_NOSUB) != 0) {
+        return(0);      /* Report error. */
+d190 2
+d193 11
+a204 10
+    while (fgets(line, 8192, stdin) != NULL)
+    	if (regexec(&re, line, nmatch, pmatch, 0) == 0) {
+      	    printf("With the whole expression, "
+             	"a matched substring \"%.*s\" is found at position %d to %d.\n",
+    	    	pmatch[0].rm_eo - pmatch[0].rm_so, &line[pmatch[0].rm_so],
+    	    	pmatch[0].rm_so, pmatch[0].rm_eo - 1);
+
+	    printf("%d-%d:%s", pmatch[0].rm_so, pmatch[0].rm_eo - 1, line);
+    	}
+    regfree(&re);
+@
